@@ -43,6 +43,11 @@ public class StandaloneFallbackConfig {
     @Bean
     @ConditionalOnMissingBean(StringRedisTemplate.class)
     public StringRedisTemplate fallbackStringRedisTemplate() {
-        return new StringRedisTemplate();
+        return new StringRedisTemplate() {
+            @Override
+            public void afterPropertiesSet() {
+                // No-op to prevent "RedisConnectionFactory is required" assertion during container initialization
+            }
+        };
     }
 }
