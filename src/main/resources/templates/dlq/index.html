@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Dead Letter Queue - EventFlow</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
+        .sidebar { background-color: #1e293b; border-right: 1px solid #334155; min-height: 100vh; }
+        .nav-link { color: #94a3b8; border-radius: 6px; padding: 10px 16px; margin-bottom: 4px; }
+        .nav-link:hover, .nav-link.active { background-color: #3b82f6; color: #ffffff; }
+        .card-custom { background-color: #1e293b; border: 1px solid #334155; border-radius: 12px; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <nav class="col-md-3 col-lg-2 sidebar d-flex flex-column p-3">
+            <a href="/dashboard" class="d-flex align-items-center mb-4 text-white text-decoration-none">
+                <i class="bi bi-diagram-3-fill text-primary fs-3 me-2"></i>
+                <span class="fs-4 fw-bold">EventFlow</span>
+            </a>
+            <hr class="border-secondary">
+            <ul class="nav nav-pills flex-column mb-auto">
+                <li><a href="/dashboard" class="nav-link"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a></li>
+                <li><a href="/events" class="nav-link"><i class="bi bi-lightning-charge me-2"></i> Event Explorer</a></li>
+                <li><a href="/webhooks" class="nav-link"><i class="bi bi-send-check me-2"></i> Webhooks</a></li>
+                <li class="nav-item"><a href="/dlq" class="nav-link active"><i class="bi bi-exclamation-triangle-fill me-2"></i> Dead Letter Queue</a></li>
+                <li><a href="/audit" class="nav-link"><i class="bi bi-journal-text me-2"></i> Audit Logs</a></li>
+                <li><a href="/api-keys" class="nav-link"><i class="bi bi-key-fill me-2"></i> API Keys</a></li>
+                <li><a href="/simulator" class="nav-link"><i class="bi bi-bug-fill me-2"></i> Failure Simulator</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <h2 class="h3 fw-bold mb-4 text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i> Dead Letter Queue (DLQ) Inspector</h2>
+
+            <div class="card-custom p-4">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="text-muted">
+                                <th>DLQ ID</th>
+                                <th>Event ID</th>
+                                <th>Topic</th>
+                                <th>Failure Reason</th>
+                                <th>Attempts</th>
+                                <th>Status</th>
+                                <th>Failed At</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="dlq : ${dlqItems}">
+                                <td><code th:text="${dlq.id}">dlq_123</code></td>
+                                <td><code th:text="${dlq.event.id}">evt_123</code></td>
+                                <td th:text="${dlq.topic}">eventflow.webhooks</td>
+                                <td><small class="text-danger" th:text="${dlq.failureReason}">Failed after 5 attempts</small></td>
+                                <td th:text="${dlq.attemptCount}">5</td>
+                                <td>
+                                    <span class="badge bg-danger" th:if="${dlq.status == 'UNRESOLVED'}">UNRESOLVED</span>
+                                    <span class="badge bg-success" th:if="${dlq.status == 'REPLAYED'}">REPLAYED</span>
+                                    <span class="badge bg-secondary" th:if="${dlq.status == 'DISCARDED'}">DISCARDED</span>
+                                </td>
+                                <td th:text="${dlq.lastFailedAt}">2026-09-16</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-success me-1" th:if="${dlq.status == 'UNRESOLVED'}" th:onclick="'replayDlq(\'' + ${dlq.id} + '\')'"><i class="bi bi-arrow-clockwise"></i> Replay</button>
+                                    <button class="btn btn-sm btn-outline-secondary" th:if="${dlq.status == 'UNRESOLVED'}" th:onclick="'discardDlq(\'' + ${dlq.id} + '\')'"><i class="bi bi-trash"></i> Discard</button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(dlqItems)}">
+                                <td colspan="8" class="text-center text-muted py-4"><i class="bi bi-check-circle text-success me-2"></i> DLQ is currently clean. No unprocessable messages.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<script>
+    async function replayDlq(id) {
+        if (!confirm("Replay DLQ message " + id + "?")) return;
+        const res = await fetch('/api/v1/dlq/' + id + '/replay', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ef_live_demo1234567890abcdef123456' }
+        });
+        if (res.ok) {
+            alert('DLQ event replayed successfully!');
+            window.location.reload();
+        }
+    }
+    async function discardDlq(id) {
+        if (!confirm("Discard DLQ message " + id + "?")) return;
+        const res = await fetch('/api/v1/dlq/' + id + '/discard', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ef_live_demo1234567890abcdef123456' }
+        });
+        if (res.ok) window.location.reload();
+    }
+</script>
+</body>
+</html>
