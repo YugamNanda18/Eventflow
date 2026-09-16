@@ -1,68 +1,25 @@
-# EventFlow — Reliable Event Processing & Webhook Automation Platform
+# ⚡ EventFlow — Reliable Event Processing & Webhook Automation Platform
 
-EventFlow is a production-oriented distributed backend platform engineered with Java 21, Spring Boot 3.x, Apache Kafka, PostgreSQL, Redis, and Thymeleaf + Bootstrap 5.
+[![Java 21](https://img.shields.io/badge/Java-21-orange.svg?style=flat-square&logo=openjdk)](https://openjdk.org/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-brightgreen.svg?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
+[![Apache Kafka](https://img.shields.io/badge/Apache%20Kafka-3.6-red.svg?style=flat-square&logo=apachekafka)](https://kafka.apache.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-red.svg?style=flat-square&logo=redis)](https://redis.io/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-blue.svg?style=flat-square&logo=docker)](https://www.docker.com/)
+[![Live Demo](https://img.shields.io/badge/Render-Live%20Demo-success?style=flat-square&logo=render)](https://eventflow-6fi3.onrender.com/dashboard)
 
-It solves the core reliability challenges of event-driven architectures between producers (e.g. payment services, order systems, IoT telemetry) and downstream webhooks/consumers:
-- Dual-write race conditions (solved with **Transactional Outbox Pattern**).
-- Duplicate event submissions (solved with **Database-Backed Idempotency**).
-- Consumer re-processing (solved with **Consumer Idempotency Tables**).
-- Intermittent HTTP failures & network outages (solved with **Exponential Backoff Retries + Jitter**).
-- Unprocessable payloads (solved with **Dead Letter Queue (DLQ)**).
-- Webhook authenticity & tampering (solved with **HMAC SHA-256 Signatures**).
-- Operator manual intervention & replay (solved with **Audit-Logged Event & DLQ Replay**).
+**EventFlow** is an enterprise-grade, distributed backend platform engineered to guarantee **100% reliable event ingestion, asynchronous queuing, and webhook dispatching** between microservice producers (payments, e-commerce, IoT) and downstream consumer subscribers.
 
----
-
-## 🚀 Key Features & Architectural Philosophy
-
-1. **Modular Monolith Architecture**: Bounded modules (`auth`, `tenant`, `event`, `outbox`, `kafka`, `consumer`, `webhook`, `retry`, `dlq`, `replay`, `ratelimit`, `audit`, `observability`, `admin`, `simulator`, `demowebhook`).
-2. **Multi-Tenant Isolation**: Every record is scoped to an `Organization`. Explicit IDOR protection at service & JPA repository layers.
-3. **Database-Backed Idempotency**: DB unique constraint on `(organization_id, idempotency_key)`. Identical payload re-submissions return `200 OK` safely; mismatched payload on the same key returns deterministic `409 Conflict`.
-4. **Transactional Outbox Pattern**: Atomic database transaction saves the `EventEntity` and `OutboxEvent`. A background scheduler polls `PENDING` outbox records and emits to Kafka.
-5. **Consumer Idempotency**: Consumers check `processed_events` table `(event_id, consumer_name)` before processing.
-6. **Webhook Engine with HMAC Signatures**: Generates `X-EventFlow-Signature` (`t=<timestamp>,v1=HMAC-SHA256(...)`) header. Supports timestamp tolerance to prevent replay attacks.
-7. **Exponential Backoff Retries**: Configurable schedule (1s, 5s, 30s, 2m, 10m).
-8. **Dead Letter Queue (DLQ)**: Failed deliveries after max retries enter DLQ. Operators can inspect, retry, or discard from the Admin UI.
-9. **Event Replay Engine**: Re-queues events with correlation sub-tracking without mutating historical records.
-10. **Redis Rate Limiting**: Token bucket rate limiter (100 req/min/API key) returning `HTTP 429`.
-11. **Append-Only Audit Log**: Tracks all user and system mutations (`EVENT_CREATED`, `DLQ_RETRIED`, `REPLAY_STARTED`, etc.).
-12. **Observability**: Spring Boot Actuator + Micrometer Prometheus counters (`event_ingestion_total`, `webhook_delivery_latency`, `dlq_total`, etc.).
-13. **Dev Failure Simulator**: Injects 500 errors, timeouts, or consumer crashes to demonstrate system resilience.
-14. **Demo Webhook Receiver**: Built-in endpoint (`/api/v1/demo-webhook`) to demonstrate end-to-end delivery locally.
+It replaces fragile HTTP webhook dispatches with industrial-grade backend resilience patterns: **Transactional Outbox**, **Database-Backed Idempotency**, **HMAC SHA-256 Cryptographic Signatures**, **Exponential Backoff Retries**, and a **Dead Letter Queue (DLQ) Inspector**.
 
 ---
 
-## 🛠️ Technology Stack
+## 🌐 Live Demo & Instant Access
 
-| Component | Technology |
-|---|---|
-| **Language** | Java 21 |
-| **Framework** | Spring Boot 3.3.4 (Web, Security, Data JPA, Actuator, Thymeleaf) |
-| **Database** | PostgreSQL 16 (Flyway Migrations) |
-| **Messaging** | Apache Kafka 3.6 |
-| **Cache & Rate Limiter** | Redis 7 |
-| **Security** | Spring Security 6, JWT, BCrypt, API Key Hashing |
-| **API Documentation** | OpenAPI 3 / Swagger (`/swagger-ui.html`) |
-| **Metrics** | Micrometer Prometheus (`/actuator/prometheus`) |
-| **Containers** | Docker & Docker Compose |
-| **Testing** | JUnit 5, Mockito, Spring Boot Test, Testcontainers |
+- 🚀 **Live Dashboard**: [https://eventflow-6fi3.onrender.com/dashboard](https://eventflow-6fi3.onrender.com/dashboard)
+- 📖 **OpenAPI / Swagger Specs**: [https://eventflow-6fi3.onrender.com/swagger-ui.html](https://eventflow-6fi3.onrender.com/swagger-ui.html)
 
----
-
-## ⚡ Quickstart (Local Docker Setup)
-
-```bash
-# 1. Clone repository & build full stack
-docker compose up --build
-
-# 2. Access Admin Dashboard
-open http://localhost:8080/dashboard
-
-# 3. Access OpenAPI / Swagger Specs
-open http://localhost:8080/swagger-ui.html
-```
-
-### Demo Credentials
+### 🔑 Pre-seeded Demo Credentials
 - **Admin**: `admin@demo.eventflow` / `Password123!`
 - **Developer**: `developer@demo.eventflow` / `Password123!`
 - **Operator**: `operator@demo.eventflow` / `Password123!`
@@ -70,34 +27,124 @@ open http://localhost:8080/swagger-ui.html
 
 ---
 
-## 📡 API Ingestion Example
+## 🏗️ Architecture & System Lifecycle
 
+```
+[ Producer Service ]
+         │
+         │ 1. POST /api/v1/events (Bearer Token + Idempotency Key)
+         ▼
+[ EventFlow API Engine ]
+         ├── 2. Redis Token Bucket Rate Limiting (100 req/min/key)
+         ├── 3. Organization Scope & API Key Hash Verification (SHA-256)
+         └── 4. DB Idempotency Check (Unique Constraint: Org_ID + Key)
+         │
+         │ 5. Transactional Outbox Pattern (Atomic DB Transaction)
+         ├── Save `EventEntity`
+         └── Save `OutboxEvent` (Status: PENDING)
+         ▼
+[ Outbox Publisher Scheduler ]
+         └── Background thread polls PENDING outbox & emits to Kafka
+         ▼
+[ Apache Kafka Messaging ]
+         └── Topic: `eventflow.events` (3 Partitions, Key-Ordered)
+         ▼
+[ Consumer & Webhook Engine ]
+         ├── 6. Consumer Idempotency check (`processed_events` table)
+         ├── 7. Sign Payload with HMAC SHA-256 (`X-EventFlow-Signature`)
+         └── 8. HTTP POST Dispatch -> Target Webhook URL
+         │
+    ┌────┴────────────────────────┐
+    ▼                             ▼
+[ 2xx SUCCESS ]          [ 4xx/5xx Failure ]
+Status = SUCCESS         Exponential Backoff Retries (1s ➔ 5s ➔ 30s ➔ 2m ➔ 10m)
+                                  │
+                           [ Max Retries (5) Exceeded ]
+                                  │
+                           Dead Letter Queue (DLQ Inspector)
+```
+
+---
+
+## ✨ Key Technical Features
+
+| Feature | Enterprise Pattern | Implementation Detail |
+|---|---|---|
+| ⚡ **Dual-Write Protection** | **Transactional Outbox** | Atomically writes `events` and `outbox_events` in 1 DB transaction before Kafka push. |
+| 🛡️ **Zero Duplicates** | **DB Idempotency** | Composite unique index `(organization_id, idempotency_key)`. Identical payloads return `200 OK`. |
+| 🔒 **Webhook Security** | **HMAC SHA-256 Signatures** | Header `X-EventFlow-Signature: t=<time>,v1=<hash>` protects against tampering & replay. |
+| 🔁 **Fault Resilience** | **Exponential Backoff** | Automated retry schedule (1s, 5s, 30s, 2m, 10m) with jitter for failed endpoints. |
+| ⚠️ **Failure Recovery** | **DLQ & Event Replay** | Inspector UI captures failed events after 5 attempts; allows 1-click operator replay. |
+| 🚀 **Rate Limiting** | **Redis Sliding Window** | Token Bucket rate limiter enforcing 100 req/min per API key returning `HTTP 429`. |
+| 📊 **Observability** | **Prometheus & Actuator** | Custom metrics (`event_ingestion_total`, `webhook_latency_ms`, `dlq_unresolved_total`). |
+| 🏢 **Multi-Tenancy** | **Tenant Context** | ThreadLocal `TenantContext` enforcing strict organizational data boundary checks. |
+
+---
+
+## 🚀 Quickstart & Local Docker Deployment
+
+### 1. Run Complete Stack (Postgres, Kafka, Redis, EventFlow)
 ```bash
-curl -X POST http://localhost:8080/api/v1/events \
+git clone https://github.com/YugamNanda18/eventflow.git
+cd eventflow
+docker compose up --build -d
+```
+
+### 2. Access Local Services
+- **Dashboard**: `http://localhost:8080/dashboard`
+- **OpenAPI UI**: `http://localhost:8080/swagger-ui.html`
+- **Prometheus Metrics**: `http://localhost:8080/actuator/prometheus`
+
+---
+
+## 📡 API Ingestion & Usage Examples
+
+### 1. Ingest an Event (Producer Service)
+```bash
+curl -X POST https://eventflow-6fi3.onrender.com/api/v1/events \
   -H "Authorization: Bearer ef_live_demo1234567890abcdef123456" \
   -H "Content-Type: application/json" \
   -d '{
     "eventType": "order.created",
     "eventVersion": "1.0",
-    "source": "commerce-service",
-    "idempotencyKey": "order-98231-created",
+    "source": "checkout-service",
+    "idempotencyKey": "order-9981-created",
     "payload": {
-      "orderId": "ORD-98231",
-      "customerId": "CUS-81",
-      "amount": 2499
+      "orderId": "ORD-9981",
+      "customerEmail": "customer@example.com",
+      "amount": 4999
     }
+  }'
+```
+
+### 2. Register Webhook Target (Subscriber Service)
+```bash
+curl -X POST https://eventflow-6fi3.onrender.com/api/v1/webhooks \
+  -H "Authorization: Bearer ef_live_demo1234567890abcdef123456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://your-server.com/api/v1/webhooks/listener",
+    "description": "Payment Notifications Listener",
+    "eventTypes": ["order.created", "payment.succeeded"]
   }'
 ```
 
 ---
 
-## 📑 Documentation Index
-- [Architecture & Design](docs/architecture.md)
-- [Kafka Design & Partitioning](docs/kafka.md)
-- [Database Schemas & Flyway](docs/database.md)
-- [Security & API Key Hashing](docs/security.md)
-- [Reliability & Outbox Pattern](docs/reliability.md)
-- [API Reference Specs](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [Failure Scenarios & Mitigation](docs/failure-scenarios.md)
-- [Backend Interview Guide](docs/interview-guide.md)
+## 📑 Deep-Dive Documentation Index
+
+- [📘 Comprehensive Project & Usage Guide](docs/PROJECT_GUIDE.md)
+- [🏛️ System Architecture & Bounded Modules](docs/architecture.md)
+- [📡 Kafka Topic Partitioning & Ordering](docs/kafka.md)
+- [🗄️ Database Schemas & Flyway Migrations](docs/database.md)
+- [🔐 Security & API Key SHA-256 Hashing](docs/security.md)
+- [⚙️ Reliability & Outbox Pattern Deep-Dive](docs/reliability.md)
+- [📝 API Reference Specifications](docs/api.md)
+- [☁️ Zero-Error Cloud Deployment Guide](docs/deployment.md)
+- [🛠️ Failure Scenarios & Mitigation](docs/failure-scenarios.md)
+- [🎓 Backend Engineering Interview Guide](docs/interview-guide.md)
+
+---
+
+## 📄 License
+This project is licensed under the MIT License.
