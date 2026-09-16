@@ -59,7 +59,7 @@
                                 <td><small class="text-muted" th:text="${ep.secret}">whsec_...</small></td>
                                 <td><span class="badge bg-success" th:if="${ep.active}">ACTIVE</span><span class="badge bg-danger" th:unless="${ep.active}">DISABLED</span></td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-danger" th:if="${ep.active}" th:onclick="'disableWebhook(\'' + ${ep.id} + '\')'">Disable</button>
+                                    <button class="btn btn-sm btn-outline-danger" th:if="${ep.active}" th:data-id="${ep.id}" onclick="disableWebhook(this.getAttribute('data-id'))">Disable</button>
                                 </td>
                             </tr>
                         </tbody>

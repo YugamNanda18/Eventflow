@@ -67,8 +67,8 @@
                                 </td>
                                 <td th:text="${dlq.lastFailedAt}">2026-09-16</td>
                                 <td>
-                                    <button class="btn btn-sm btn-outline-success me-1" th:if="${dlq.status == 'UNRESOLVED'}" th:onclick="'replayDlq(\'' + ${dlq.id} + '\')'"><i class="bi bi-arrow-clockwise"></i> Replay</button>
-                                    <button class="btn btn-sm btn-outline-secondary" th:if="${dlq.status == 'UNRESOLVED'}" th:onclick="'discardDlq(\'' + ${dlq.id} + '\')'"><i class="bi bi-trash"></i> Discard</button>
+                                    <button class="btn btn-sm btn-outline-success me-1" th:if="${dlq.status == 'UNRESOLVED'}" th:data-id="${dlq.id}" onclick="replayDlq(this.getAttribute('data-id'))"><i class="bi bi-arrow-clockwise"></i> Replay</button>
+                                    <button class="btn btn-sm btn-outline-secondary" th:if="${dlq.status == 'UNRESOLVED'}" th:data-id="${dlq.id}" onclick="discardDlq(this.getAttribute('data-id'))"><i class="bi bi-trash"></i> Discard</button>
                                 </td>
                             </tr>
                             <tr th:if="${#lists.isEmpty(dlqItems)}">
